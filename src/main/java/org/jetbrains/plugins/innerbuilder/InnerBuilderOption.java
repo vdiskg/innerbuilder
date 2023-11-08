@@ -25,7 +25,10 @@ public enum InnerBuilderOption {
     JSR305_ANNOTATIONS("useJSR305Annotations"),
     PMD_AVOID_FIELD_NAME_MATCHING_METHOD_NAME_ANNOTATION("suppressAvoidFieldNameMatchingMethodName"),
     WITH_JAVADOC("withJavadoc"),
-    FIELD_NAMES("fieldNames");
+    FIELD_NAMES("fieldNames"),
+    PACKAGE_LOCAL_BUILDER_METHOD("packageLocalBuilderMethod"),
+    TO_BUILDER("toBuilder"),
+    ;
 
     private final String property;
     private final Boolean booleanProperty;

@@ -126,6 +126,18 @@ public final class InnerBuilderOptionSelector {
                 "Generate builder methods that has the same parameter names in setter methods as field names, for example: builder.withName(String fieldName)")
         );
 
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.PACKAGE_LOCAL_BUILDER_METHOD,
+            "Use package local modifier for builder method",
+            '\0')
+        );
+
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.TO_BUILDER,
+            "Add 'toBuilder()' method",
+            '\0')
+        );
+
         return options;
     }
 
