@@ -12,6 +12,7 @@ import com.intellij.psi.PsiCodeBlock;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementFactory;
+import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
@@ -19,6 +20,8 @@ import com.intellij.psi.PsiModifier;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiPrimitiveType;
+import com.intellij.psi.PsiReferenceExpression;
+import com.intellij.psi.PsiReturnStatement;
 import com.intellij.psi.PsiStatement;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.codeStyle.CodeStyleManager;
@@ -133,7 +136,10 @@ public class InnerBuilderGenerator implements Runnable {
 
         if (options.contains(InnerBuilderOption.GETTER)) {
             for (PsiFieldMember selectedField : this.selectedFields) {
-                PsiMethod getterMethod = GenerateMembersUtil.generateGetterPrototype(selectedField.getElement());
+                PsiField psiField = selectedField.getElement();
+                PsiMethod getterMethod = GenerateMembersUtil.generateGetterPrototype(psiField);
+                // 创建新的 return 语句，使用 "this." + 字段名
+                addThis(getterMethod, psiField);
                 addMethod(targetClass, null, getterMethod, true);
             }
         }
@@ -151,6 +157,28 @@ public class InnerBuilderGenerator implements Runnable {
 
         JavaCodeStyleManager.getInstance(project).shortenClassReferences(file);
         CodeStyleManager.getInstance(project).reformat(builderClass);
+    }
+
+    private void addThis(PsiMethod getterMethod, PsiField psiField) {
+        PsiCodeBlock methodBody = getterMethod.getBody();
+        if (methodBody != null) {
+            for (PsiStatement statement : methodBody.getStatements()) {
+                if (statement instanceof PsiReturnStatement) {
+                    PsiReturnStatement returnStatement = (PsiReturnStatement) statement;
+                    PsiExpression returnValue = returnStatement.getReturnValue();
+
+                    if (returnValue instanceof PsiReferenceExpression) {
+                        PsiReferenceExpression referenceExpression = (PsiReferenceExpression) returnValue;
+
+                        PsiReturnStatement newReturnStatement = (PsiReturnStatement) psiElementFactory.createStatementFromText(
+                            "return this." + referenceExpression.getReferenceName() + ";", psiField);
+
+                        // 替换旧的 return 语句
+                        returnStatement.replace(newReturnStatement);
+                    }
+                }
+            }
+        }
     }
 
     private PsiMethod generateToBuilderMethod(final PsiClass targetClass, final PsiType builderType,
@@ -437,9 +465,9 @@ public class InnerBuilderGenerator implements Runnable {
 
                 final String assignText;
                 if (setter == null || isFinal) {
-                    assignText = String.format("%1$s = builder.%1$s;", fieldName);
+                    assignText = String.format("this.%1$s = builder.%1$s;", fieldName);
                 } else {
-                    assignText = String.format("%s(builder.%s);", setter.getName(), fieldName);
+                    assignText = String.format("this.%s(builder.%s);", setter.getName(), fieldName);
                 }
 
                 final PsiStatement assignStatement = psiElementFactory.createStatementFromText(assignText, null);
