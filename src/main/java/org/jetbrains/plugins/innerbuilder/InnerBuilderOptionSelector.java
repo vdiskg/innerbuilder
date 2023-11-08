@@ -138,6 +138,12 @@ public final class InnerBuilderOptionSelector {
             '\0')
         );
 
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.GETTER,
+            "Add 'get...' method",
+            '\0')
+        );
+
         return options;
     }
 

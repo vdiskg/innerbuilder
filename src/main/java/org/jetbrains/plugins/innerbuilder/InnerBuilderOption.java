@@ -28,6 +28,7 @@ public enum InnerBuilderOption {
     FIELD_NAMES("fieldNames"),
     PACKAGE_LOCAL_BUILDER_METHOD("packageLocalBuilderMethod"),
     TO_BUILDER("toBuilder"),
+    GETTER("getter"),
     ;
 
     private final String property;

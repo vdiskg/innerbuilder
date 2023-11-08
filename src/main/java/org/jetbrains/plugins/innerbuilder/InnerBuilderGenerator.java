@@ -1,5 +1,6 @@
 package org.jetbrains.plugins.innerbuilder;
 
+import com.intellij.codeInsight.generation.GenerateMembersUtil;
 import com.intellij.codeInsight.generation.PsiFieldMember;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -127,6 +128,13 @@ public class InnerBuilderGenerator implements Runnable {
                 final PsiMethod copyConstructorBuilderMethod = generateCopyConstructor(targetClass, builderType,
                     selectedFields, options);
                 addMethod(builderClass, null, copyConstructorBuilderMethod, true);
+            }
+        }
+
+        if (options.contains(InnerBuilderOption.GETTER)) {
+            for (PsiFieldMember selectedField : this.selectedFields) {
+                PsiMethod getterMethod = GenerateMembersUtil.generateGetterPrototype(selectedField.getElement());
+                addMethod(targetClass, null, getterMethod, true);
             }
         }
 
