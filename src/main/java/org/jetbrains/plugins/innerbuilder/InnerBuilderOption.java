@@ -29,6 +29,8 @@ public enum InnerBuilderOption {
     PACKAGE_LOCAL_BUILDER_METHOD("packageLocalBuilderMethod"),
     TO_BUILDER("toBuilder"),
     GETTER("getter"),
+    COLLECTION_UNMODIFIABLE("collectionUnmodifiable"),
+    COLLECTION_NULL_AS_EMPTY("collectionNullAsEmpty"),
     ;
 
     private final String property;

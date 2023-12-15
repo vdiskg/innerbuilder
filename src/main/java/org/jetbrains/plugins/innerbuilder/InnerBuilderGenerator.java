@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiCodeBlock;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
@@ -430,8 +431,9 @@ public class InnerBuilderGenerator implements Runnable {
             final String actualFieldName = options.contains(InnerBuilderOption.FIELD_NAMES) ?
                 "this." + fieldName :
                 fieldName;
+            String parameterText = this.getParameterText(parameterName, fieldType, options);
             final PsiStatement assignStatement = psiElementFactory.createStatementFromText(String.format(
-                "%s = %s;", actualFieldName, parameterName), setterMethod);
+                "%s = %s;", actualFieldName, parameterText), setterMethod);
             setterMethodBody.add(assignStatement);
             setterMethodBody.add(InnerBuilderUtils.createReturnThis(psiElementFactory, setterMethod));
         }
@@ -439,6 +441,35 @@ public class InnerBuilderGenerator implements Runnable {
         return setterMethod;
     }
 
+    private String getParameterText(String parameterName, PsiType fieldType,
+        Set<InnerBuilderOption> options) {
+        if (!options.contains(InnerBuilderOption.COLLECTION_UNMODIFIABLE)) {
+            return parameterName;
+        }
+        if (fieldType instanceof PsiClassType psiClassType) {
+            PsiClassType rawType = psiClassType.rawType();
+            String rawTypeText = rawType.getCanonicalText();
+            switch (rawTypeText) {
+                case "java.util.List", "java.util.Collection", "java.util.Map", "java.util.Set", "java.util.NavigableMap", "java.util.NavigableSet", "java.util.SortedMap", "java.util.SortedSet" -> {
+                    String collectionType = rawTypeText.substring("java.util.".length());
+                    String emptyFactory =
+                        "Collection".equals(collectionType) ? "emptySet" : "empty" + collectionType;
+                    if (options.contains(InnerBuilderOption.COLLECTION_NULL_AS_EMPTY)) {
+                        return String.format(
+                            "(%s == null || %s.isEmpty()) ? Collections.%s() : Collections.unmodifiable%s(%s)"
+                            , parameterName, parameterName, emptyFactory, collectionType,
+                            parameterName);
+                    } else {
+                        return String.format(
+                            "%s == null ? null : (%s.isEmpty() ? Collections.%s() : Collections.unmodifiable%s(%s))",
+                            parameterName, parameterName, emptyFactory, collectionType,
+                            parameterName);
+                    }
+                }
+            }
+        }
+        return parameterName;
+    }
 
     private PsiMethod generateConstructor(final PsiClass targetClass, final PsiType builderType, Set<InnerBuilderOption> options) {
         final PsiMethod constructor = psiElementFactory.createConstructor(targetClass.getName());

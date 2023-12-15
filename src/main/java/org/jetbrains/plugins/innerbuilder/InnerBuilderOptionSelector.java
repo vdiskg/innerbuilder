@@ -10,7 +10,8 @@ import com.intellij.openapi.ui.LabeledComponent;
 import com.intellij.ui.NonFocusableCheckBox;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import java.awt.event.ItemEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -142,6 +143,20 @@ public final class InnerBuilderOptionSelector {
             InnerBuilderOption.GETTER,
             "Add 'get...' method",
             '\0')
+        );
+
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.COLLECTION_UNMODIFIABLE,
+            "Add 'Collections.unmodifiable*()' wrapper",
+            '\0',
+            "Add 'Collections.unmodifiable*()' wrapper for parameter in the Builder's setter method")
+        );
+
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.COLLECTION_NULL_AS_EMPTY,
+            "Add 'Collections.empty*()' wrapper for null",
+            '\0',
+            "Add 'Collections.empty*()' wrapper for null parameter in the Builder's setter method")
         );
 
         return options;
