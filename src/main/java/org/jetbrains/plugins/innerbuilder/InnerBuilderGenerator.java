@@ -461,7 +461,7 @@ public class InnerBuilderGenerator implements Runnable {
                             parameterName);
                     } else {
                         return String.format(
-                            "%s == null ? null : (%s.isEmpty() ? Collections.%s() : Collections.unmodifiable%s(%s))",
+                            "%s == null ? null :\n  // nonnull\n (%s.isEmpty() ? Collections.%s() : Collections.unmodifiable%s(%s))",
                             parameterName, parameterName, emptyFactory, collectionType,
                             parameterName);
                     }
