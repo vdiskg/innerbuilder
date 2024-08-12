@@ -7,7 +7,30 @@ plugins {
 group = "org.jetbrains.plugins"
 version = "1.3.1-SNAPSHOT"
 
+fun propertiesInternal(key: String): String? {
+    val value = project.findProperty(key)
+    return value?.toString()
+}
+
+fun propertiesStrictBoolean(key: String): Boolean? {
+    val value = propertiesInternal(key)
+    return when (value?.trim()?.lowercase()) {
+        null -> null
+        "" -> null
+        "true" -> true
+        "false" -> false
+        else -> throw IllegalArgumentException("Property ${key} must be 'true' or 'false'")
+    }
+}
+
+val skipMirror: Boolean = propertiesStrictBoolean("skipMirror") ?: false
+
 repositories {
+    if (!skipMirror) {
+        maven {
+            url = uri("https://maven.aliyun.com/repository/public/")
+        }
+    }
     mavenCentral()
 }
 
@@ -32,7 +55,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("232")
-        untilBuild.set("233.*")
+        untilBuild.set("")
     }
 
     signPlugin {
