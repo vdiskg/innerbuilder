@@ -159,6 +159,13 @@ public final class InnerBuilderOptionSelector {
             "Add 'Collections.empty*()' wrapper for null parameter in the Builder's setter method")
         );
 
+        options.add(new CheckboxSelectorOption(
+            InnerBuilderOption.VALIDATE_BUILDER,
+            "Validate builder in constructor",
+            '\0',
+            "Add validate method for the builder in constructor")
+        );
+
         return options;
     }
 

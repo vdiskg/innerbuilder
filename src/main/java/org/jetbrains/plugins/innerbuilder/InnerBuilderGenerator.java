@@ -30,6 +30,8 @@ import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.util.PropertyUtil;
 import com.intellij.psi.util.PsiUtil;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,9 +87,23 @@ public class InnerBuilderGenerator implements Runnable {
         final Set<InnerBuilderOption> options = currentOptions();
         final PsiClass builderClass = findOrCreateBuilderClass(targetClass);
         final PsiType builderType = psiElementFactory.createTypeFromText(BUILDER_CLASS_NAME, null);
+
+        final PsiMethod validateMethod = generateValidateMethod(targetClass, builderType, options);
+        if (validateMethod != null) {
+            PsiField[] allFields = targetClass.getAllFields();
+            PsiField lastField = ArrayUtils.isNotEmpty(allFields) ? allFields[allFields.length - 1] : null;
+            AddMethodArgs args = AddMethodArgs.builder()
+                .prev(lastField)
+                .newMethod(validateMethod)
+                .replace(false)
+                .build();
+            addMethod(targetClass, args);
+        }
+
         final PsiMethod constructor = generateConstructor(targetClass, builderType, options);
 
         addMethod(targetClass, null, constructor, true);
+
         final Collection<PsiFieldMember> finalFields = new ArrayList<>();
         final Collection<PsiFieldMember> nonFinalFields = new ArrayList<>();
 
@@ -158,6 +174,18 @@ public class InnerBuilderGenerator implements Runnable {
 
         JavaCodeStyleManager.getInstance(project).shortenClassReferences(file);
         CodeStyleManager.getInstance(project).reformat(builderClass);
+    }
+
+    private PsiMethod generateValidateMethod(PsiClass targetClass, PsiType builderType, Set<InnerBuilderOption> options) {
+        if (!options.contains(InnerBuilderOption.VALIDATE_BUILDER)) {
+            return null;
+        }
+        PsiMethod validateMethod = psiElementFactory.createMethodFromText("void validateBuilder() {}", targetClass);
+        PsiUtil.setModifierProperty(validateMethod, PsiModifier.PRIVATE, true);
+        PsiUtil.setModifierProperty(validateMethod, PsiModifier.STATIC, true);
+        PsiParameter builderParameter = psiElementFactory.createParameter("builder", builderType);
+        validateMethod.getParameterList().add(builderParameter);
+        return validateMethod;
     }
 
     private void addThis(PsiMethod getterMethod, PsiField psiField) {
@@ -481,6 +509,11 @@ public class InnerBuilderGenerator implements Runnable {
 
         final PsiCodeBlock constructorBody = constructor.getBody();
         if (constructorBody != null) {
+            if (options.contains(InnerBuilderOption.VALIDATE_BUILDER)) {
+                final String validateText = targetClass.getName() + ".validateBuilder(builder);";
+                PsiStatement validateStatement = psiElementFactory.createStatementFromText(validateText, null);
+                constructorBody.add(validateStatement);
+            }
             for (final PsiFieldMember member : selectedFields) {
                 final PsiField field = member.getElement();
 
@@ -580,7 +613,19 @@ public class InnerBuilderGenerator implements Runnable {
     }
 
     private PsiElement addMethod(@NotNull final PsiClass target, @Nullable final PsiElement after,
-                                 @NotNull final PsiMethod newMethod, final boolean replace) {
+        @NotNull final PsiMethod newMethod, final boolean replace) {
+        AddMethodArgs args = AddMethodArgs.builder()
+            .prev(after)
+            .newMethod(newMethod)
+            .replace(replace)
+            .build();
+        return addMethod(target, args);
+    }
+
+    private PsiElement addMethod(@NotNull final PsiClass target, AddMethodArgs args) {
+        PsiElement prev = args.getPrev();
+        PsiMethod newMethod = args.getNewMethod();
+        boolean replace = args.getReplace();
         PsiMethod existingMethod = target.findMethodBySignature(newMethod, false);
         if (existingMethod == null && newMethod.isConstructor()) {
             for (final PsiMethod constructor : target.getConstructors()) {
@@ -592,8 +637,8 @@ public class InnerBuilderGenerator implements Runnable {
             }
         }
         if (existingMethod == null) {
-            if (after != null) {
-                return target.addAfter(newMethod, after);
+            if (prev != null) {
+                return target.addAfter(newMethod, prev);
             } else {
                 return target.add(newMethod);
             }

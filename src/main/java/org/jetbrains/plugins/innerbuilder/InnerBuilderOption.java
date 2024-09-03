@@ -31,6 +31,7 @@ public enum InnerBuilderOption {
     GETTER("getter"),
     COLLECTION_UNMODIFIABLE("collectionUnmodifiable"),
     COLLECTION_NULL_AS_EMPTY("collectionNullAsEmpty"),
+    VALIDATE_BUILDER("validateBuilder"),
     ;
 
     private final String property;
