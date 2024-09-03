@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "org.jetbrains.plugins"
-version = "1.3.1-SNAPSHOT"
+version = "1.3.2-SNAPSHOT"
 
 fun propertiesInternal(key: String): String? {
     val value = project.findProperty(key)
