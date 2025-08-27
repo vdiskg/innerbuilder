@@ -6,6 +6,7 @@ import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Computable;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
@@ -38,8 +39,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class InnerBuilderGenerator implements Runnable {
@@ -65,8 +68,19 @@ public class InnerBuilderGenerator implements Runnable {
 
     public static void generate(final Project project, final Editor editor, final PsiFile file,
                                 final List<PsiFieldMember> selectedFields) {
-        final Runnable builderGenerator = new InnerBuilderGenerator(project, file, editor, selectedFields);
+        List<PsiFieldMember> sortedFields = sortField(selectedFields);
+        final Runnable builderGenerator = new InnerBuilderGenerator(project, file, editor, sortedFields);
         ApplicationManager.getApplication().runWriteAction(builderGenerator);
+    }
+
+    private static List<PsiFieldMember> sortField(List<PsiFieldMember> selectedFields) {
+        return ApplicationManager.getApplication()
+            .runReadAction((Computable<List<PsiFieldMember>>) () -> {
+                List<PsiFieldMember> sortedFields = new ArrayList<>(selectedFields);
+                sortedFields.sort(Comparator.comparing(fieldMember -> fieldMember.getElement()
+                    .getTextOffset()));
+                return sortedFields;
+            });
     }
 
     private InnerBuilderGenerator(final Project project, final PsiFile file, final Editor editor,
